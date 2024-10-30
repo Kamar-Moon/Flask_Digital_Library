@@ -1,0 +1,19 @@
+# Ignore virtual environment directory
+venv/
+env/
+
+# Ignore Python cache files
+*.pyc
+__pycache__/
+
+# Ignore the SQLite database file
+*.db
+
+# Ignore Flask instance folder
+instance/
+
+# Ignore VS Code settings folder
+.vscode/
+
+# Ignore system files
+.DS_Store
