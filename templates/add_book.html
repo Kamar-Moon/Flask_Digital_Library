@@ -1,0 +1,54 @@
+<!-- templates/add_book.html -->
+{% extends "base.html" %}
+
+{% block title %}
+    Add Book
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Add a New Book</h2>
+        <form method="POST" action="{{ url_for('add_book') }}">
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="mb-3">
+                <label for="author" class="form-label">Author</label>
+                <input type="text" class="form-control" id="author" name="author" required>
+            </div>
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="not purchased">Not Purchased</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="read">Read</option>
+                    <option value="purchased">Purchased</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="format" class="form-label">Format</label>
+                <select class="form-select" id="format" name="format">
+                    <option value="Hardcover">Hardcover</option>
+                    <option value="Paperback">Paperback</option>
+                    <option value="Ebook">Ebook</option>
+                    <option value="AudioBook">Audiobook</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="genres" class="form-label">Genres</label>
+                <div>
+                    {% for genre in genres %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="genres" id="genre_{{ genre.GenreID }}" value="{{ genre.GenreID }}">
+                            <label class="form-check-label" for="genre_{{ genre.GenreID }}">
+                                {{ genre.GenreName }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Book</button>
+        </form>
+    </div>
+{% endblock %}
