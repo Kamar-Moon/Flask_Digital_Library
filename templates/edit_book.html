@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Edit Book
+{% endblock %}    
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Edit Book: {{ book.Title }} by {{book.Author}}</h2>
+        <form method="POST">
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" name="title" value="{{ book.Title }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="author" class="form-label">Author</label>
+                <input type="text" class="form-control" id="author" name="author" value="{{ book.Author }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="not purchased" {% if book.Status == 'not purchased' %}selected{% endif %}>Not Purchased</option>
+                    <option value="in progress" {% if book.Status == 'in progress' %}selected{% endif %}>In Progress</option> 
+                    <option value="read" {% if book.Status == 'read' %}selected{% endif %}>Read</option>  
+                    <option value="purchased" {% if book.Status == 'purchased' %}selected{% endif %}>Purchased</option> 
+                </select>
+            </div>
+            <div class="mb-3"></div>
+                <label for="status" class="form-label">Format</label>
+                <select class="form-select" id="format" name="format">
+                    <option value="Hardcover" {% if book.Format == 'Hardcover' %}selected{% endif %}>Hardcover</option>
+                    <option value="Paperback" {% if book.Format == 'Paperback' %}selected{% endif %}>Paperback</option> 
+                    <option value="Ebook" {% if book.Format == 'Ebook' %}selected{% endif %}>Ebook</option>  
+                    <option value="AudioBook" {% if book.Format == 'Audiobook' %}selected{% endif %}>AudioBook</option> 
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="genres" class="form-label">Genres</label>
+                <div>
+                    {% for genre in genres %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="genres" id="genre_{{ genre.GenreID }}" value="{{ genre.GenreID }}"
+                                   {% if genre.GenreID in assigned_genre_ids %}checked{% endif %}>
+                            <label class="form-check-label" for="genre_{{ genre.GenreID }}">
+                                {{ genre.GenreName }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div>
+{% endblock %}

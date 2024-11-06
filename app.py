@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, render_template, request,redirect,url_for,flash
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
+from sqlalchemy import text, Table,Column, Integer, ForeignKey
 import pymysql
 import secrets
 
@@ -16,6 +16,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+GenreBooks = Table(
+    'bookgenres', db.Model.metadata,
+    Column('BookID', Integer, ForeignKey('books.BookID', ondelete='CASCADE'), primary_key=True),
+    Column('GenreID', Integer, ForeignKey('genres.GenreID', ondelete='CASCADE'), primary_key=True)
+)
+
 class Genre(db.Model):
     __tablename__ = 'genres'
     GenreID = db.Column(db.Integer,primary_key=True)
@@ -29,17 +35,8 @@ class Book(db.Model):
     Status = db.Column(db.Enum('read','purchased','in progress','not purchased'),nullable=False)
     Format = db.Column(db.Enum('Hardcover', 'Paperback', 'Ebook', 'Audiobook'), nullable=False)
 
-class GenreBooks(db.Model):
-    __tablename__ = 'bookgenres'  
-    BookGenreID = db.Column(db.Integer,primary_key=True)
-    BookID = db.Column(db.Integer, db.ForeignKey('books.BookID'), nullable=False)
-    GenreID = db.Column(db.Integer, db.ForeignKey('genres.GenreID'), nullable=False) 
-
-# Relationships between tables
-book = db.relationship('Book', backref=db.backref('genre_books'))    
-genre = db.relationship('Genre', backref=db.backref('genre_books', passive_deletes=True))
-#allows access to the GenreBooks entries associated with a particular book
-genre_books = db.relationship('GenreBooks', backref='book', cascade='all, delete-orphan')
+    genres = db.relationship('Genre', secondary='bookgenres', backref=db.backref('books', lazy='dynamic'))
+   
 
 @app.route("/")
 def home():
@@ -87,21 +84,102 @@ def add_book():
 
         # Create a new Book instance
         new_book = Book(Title=title, Author=author, Status=status, Format=format)
-        db.session.add(new_book)
-        db.session.flush()  # Flush to get the BookID for GenreBooks
 
-        # Add genres to GenreBooks table
-        for genre_id in selected_genres:
-            genre_book_entry = GenreBooks(BookID=new_book.BookID, GenreID=genre_id)
-            db.session.add(genre_book_entry)
+        # Add the book to the session first, then append genres
+        db.session.add(new_book) 
         
+
+        # Add the selected genres to the book
+        for genre_id in selected_genres:
+            genre = Genre.query.get(int(genre_id)) # Fetch the genre by ID
+            if genre: # check if genre exists
+                new_book.genres.append(genre) # Add the genre to the book's genres
+
+        # Commit the session to save the book and its related genres
         db.session.commit()
+
         flash('Book added successfully!', 'success')
-        return redirect(url_for('home'))
+        return redirect(url_for('add_book'))
 
     # Fetch all genres for the form
     genres = Genre.query.all()
     return render_template('add_book.html', genres=genres)
+
+
+@app.route('/edit_book/<int:book_id>', methods=['GET', 'POST'])
+def edit_book(book_id):
+    print(f"Editing book with ID: {book_id}") #debug
+    book = Book.query.get_or_404(book_id)
+    genres = Genre.query.all()
+
+    # Prepare assigned genre IDs to pass to the template edit_book so the checkboxes can be pre-selected
+    assigned_genre_ids = [genre.GenreID for genre in book.genres]
+        
+    if request.method == 'POST':
+        print(f"Form data: {request.form}")  # Log the form data
+        book.Title = request.form['title']
+        book.Author = request.form['author']
+        book.Status = request.form['status']
+        book.Format = request.form['format']
+       
+       
+        # Get the selected genres from the form
+        selected_genres = request.form.getlist('genres') # This is a list of GenreID values from checkboxes
+
+        # Ensure genres are in integer format
+        selected_genres = [int(genre_id) for genre_id in selected_genres]
+
+        # Current genre IDs associated with the book
+        current_genre_ids = [genre.GenreID for genre in book.genres]
+
+
+        # 1. Remove unselected genres
+        for genre in book.genres:
+            if genre.GenreID not in selected_genres:
+                book.genres.remove(genre)  # Remove the genre from the book (in 'bookgenres' table)
+
+        # 2. Add new genres (that are selected but not yet associated)
+        for genre_id in selected_genres:
+            if genre_id not in current_genre_ids:
+                genre = Genre.query.get(genre_id)
+                if genre: # If the genre exists
+                    book.genres.append(genre)  # Add the genre to the book (in 'bookgenres' table)
+
+        try:
+            # Commit the changes to the database 
+            db.session.commit()
+            flash('Book updated successfully!')
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error during commit: {e}")  # This will print the error in the console
+            flash(f"Error: {e}", 'error')
+            return redirect(url_for('search_book'))
+
+    return render_template('edit_book.html', book=book, genres=genres, assigned_genre_ids=assigned_genre_ids)
+
+@app.route('/search_book',methods=['GET', 'POST'])
+def search_book():
+    if request.method == 'POST':
+        search_query = request.form['search_query']
+        # SQLAchemey to filter books by name (case insensitive)
+        # f"%{search_query}%" -> % sql wildcard matches 0 or more characters
+        # Any book Title contraining the sub-string put in f"%{search_query}% will be searched for
+        books = Book.query.filter(Book.Title.ilike(f"%{search_query}%")).all() 
+
+        # No book found 
+        if not books:
+            flash('No books found matching your search. :(')
+
+            return render_template('search_results.html', books=books, query=search_query)
+
+    return render_template('search_book.html')
+
+@app.route('/search_results', methods=['GET'])
+def search_results():
+    search_query = request.args.get('search_query')  # For GET, use `args`
+    books = Book.query.filter(Book.Title.ilike(f"%{search_query}%")).all()
+    return render_template('search_results.html', books=books, search_query=search_query)
+
 
 
 if __name__ == "__main__":

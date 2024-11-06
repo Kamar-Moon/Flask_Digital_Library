@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Edit Book
+{% endblock %}    
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Search Book</h2>
+
+<form method="GET" action="{{ url_for('search_results') }}" class="d-flex mb-4">
+    <input class="form-control me-2" type="text" name="search_query" placeholder="Search by book name" required>
+    <button class="btn btn-primary" type="submit">Search</button>
+</form>
+
+{% endblock %}
