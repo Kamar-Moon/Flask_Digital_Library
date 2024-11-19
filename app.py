@@ -1,8 +1,10 @@
 from flask import Flask, jsonify, render_template, request,redirect,url_for,flash
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text, Table,Column, Integer, ForeignKey
+from sqlalchemy import text, Table,Column, Integer, ForeignKey, select, or_
 import pymysql
 import secrets
+from markupsafe import Markup
+import re
 
 app = Flask(__name__) 
 
@@ -37,7 +39,7 @@ class Book(db.Model):
 
     genres = db.relationship('Genre', secondary='bookgenres', backref=db.backref('books', lazy='dynamic'))
    
-
+ 
 @app.route("/")
 def home():
     return render_template('base.html')
@@ -67,7 +69,20 @@ def test_query():
     else:
         return jsonify(message="Error fetching data", status="error")
 
+@app.template_filter('highlight_text')
+def highlight_text(text, query):
+    if not text or not query:
+        return text
 
+    # Case insenstive regex pattern
+    pattern = re.compile(re.escape(query), re.IGNORECASE)
+
+    highlighted = pattern.sub(
+        lambda match: f"<mark class='custom-highlight'>{match.group(0)}</mark>",
+        text
+    )
+    
+    return Markup(highlighted)  
 
 @app.route('/add_book', methods=['GET','POST'])
 def add_book():
@@ -149,11 +164,14 @@ def edit_book(book_id):
             # Commit the changes to the database 
             db.session.commit()
             flash('Book updated successfully!')
+
+            return redirect(url_for('search_book'))
+
         except Exception as e:
             db.session.rollback()
             print(f"Error during commit: {e}")  # This will print the error in the console
             flash(f"Error: {e}", 'error')
-            return redirect(url_for('search_book'))
+            return redirect(url_for('edit_book', book_id=book_id))
 
     return render_template('edit_book.html', book=book, genres=genres, assigned_genre_ids=assigned_genre_ids)
 
@@ -164,22 +182,54 @@ def search_book():
         # SQLAchemey to filter books by name (case insensitive)
         # f"%{search_query}%" -> % sql wildcard matches 0 or more characters
         # Any book Title contraining the sub-string put in f"%{search_query}% will be searched for
-        books = Book.query.filter(Book.Title.ilike(f"%{search_query}%")).all() 
+        
+        books = db.session.execute(
+            select(Book).where(
+                or_(
+                    Book.Title.ilike(f"%{search_query}%"),
+                    Book.Author.ilike(f"%{search_query}%")
+                )
+            )
+        ).scalars().all()
 
         # No book found 
         if not books:
-            flash('No books found matching your search. :(')
+            flash('No results found matching your search. :(')
 
-            return render_template('search_results.html', books=books, query=search_query)
+            return render_template('search_results.html', books=books, search_query=search_query)
 
     return render_template('search_book.html')
 
 @app.route('/search_results', methods=['GET'])
 def search_results():
     search_query = request.args.get('search_query')  # For GET, use `args`
-    books = Book.query.filter(Book.Title.ilike(f"%{search_query}%")).all()
+
+    # Search for books by title OR author (case-insensitive)
+    books = db.session.execute(
+        select(Book).where(
+            or_(
+                Book.Title.ilike(f"%{search_query}%"),
+                Book.Author.ilike(f"%{search_query}%")
+            )
+        )
+    ).scalars().all()
+
     return render_template('search_results.html', books=books, search_query=search_query)
 
+@app.route('/delete_book/int:book_id>',methods=['POST'])
+def delete_book(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    try:
+        db.session.delete(book) # delete book
+        db.session.commit() # commit the transation
+        flash('Book deleted successfully.')
+
+    except Exception as e:
+            db.session.rollback()
+            flash("Error deleting book: {e}")
+
+            return redirect(url_for('search_book'))
 
 
 if __name__ == "__main__":

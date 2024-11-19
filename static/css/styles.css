@@ -1,0 +1,43 @@
+/* colours 
+/* CSS HSL 
+--african-violet: hsla(264, 25%, 63%, 1);
+--lavender-pink: hsla(331, 71%, 80%, 1);
+--pink-lavender: hsla(312, 58%, 85%, 1);
+--lavender-blush: hsla(306, 25%, 92%, 1);
+--periwinkle: hsla(230, 35%, 79%, 1);
+*/
+
+/* Imported Fonts */
+@font-face{
+    font-family: 'CustomFonts';
+    src: url('../fonts/SweetRasty.otf') format('opentype');
+}
+
+/* Navbar */
+.navbar{
+    background-color:  hsla(331, 71%, 80%, 1);
+}
+
+h2{
+   font-family: 'CustomFonts', Arial, sans-serif;
+   font-size: 45px;
+   color: hsla(264, 25%, 63%, 1);
+}
+
+/*Custom Highlight for search results */
+mark.custom-highlight{
+    background-color: hotpink;
+    color: black;
+    padding: 2px;
+    border-radius: 4px; /* Add rounded corners*/
+}
+
+.alert{
+    background-color: hsla(306, 25%, 92%, 1);
+    border-color: rgb(152, 59, 104);
+    width: 25%;
+    margin: 20px auto;
+    padding: 15px;
+    text-align: center;
+}
+
