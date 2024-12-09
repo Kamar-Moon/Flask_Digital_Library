@@ -17,3 +17,6 @@ instance/
 
 # Ignore system files
 .DS_Store
+
+# Ignore connection file
+Config.py
