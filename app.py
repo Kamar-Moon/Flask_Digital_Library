@@ -40,8 +40,9 @@ class Book(db.Model):
     genres = db.relationship('Genre', secondary='bookgenres', backref=db.backref('books', lazy='dynamic'))
    
  
-@app.route("/")
+@app.route("/home")
 def home():
+    flash("Welcome User!")
     return render_template('base.html')
 
 # Functions
