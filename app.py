@@ -5,16 +5,10 @@ import pymysql
 import secrets
 from markupsafe import Markup
 import re
+from Config import Config
 
 app = Flask(__name__) 
-
-app.config['SECRET_KEY'] = 'Super_Secret_Key_Temp'
-
-# DB connection 
-# note that '@' MUST be replaced with its URL-encode special character 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://library:Libr%40ry1930!!@127.0.0.1:3306/personal_library'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+app.config.from_object(Config)  # Load configuration from Config class
 
 db = SQLAlchemy(app)
 
@@ -130,7 +124,7 @@ def edit_book(book_id):
     # Prepare assigned genre IDs to pass to the template edit_book so the checkboxes can be pre-selected
     assigned_genre_ids = [genre.GenreID for genre in book.genres]
         
-    if request.method == 'POST':
+    if request.method == 'POST': 
         print(f"Form data: {request.form}")  # Log the form data
         book.Title = request.form['title']
         book.Author = request.form['author']
@@ -177,7 +171,7 @@ def edit_book(book_id):
 
 @app.route('/search_book',methods=['GET', 'POST'])
 def search_book():
-    if request.method == 'POST':
+    if request.method == 'POST': # Traditional search with form submission
         search_query = request.form['search_query']
         # SQLAchemey to filter books by name (case insensitive)
         # f"%{search_query}%" -> % sql wildcard matches 0 or more characters
@@ -198,6 +192,26 @@ def search_book():
 
             return render_template('search_results.html', books=books, search_query=search_query)
 
+    # Handle AJAX (asynchronous JS) requests for dynamic search
+    if request.method == 'GET' and request.args.get('query'):
+        query = request.args.get('query', '').strip()
+
+         # Fetch matching books
+        books = db.session.execute(
+            select(Book).where(
+                or_(
+                     Book.Title.ilike(f"%{query}%"),
+                    Book.Author.ilike(f"%{query}%")
+                )
+            )
+        ).scalars().all()
+
+        # Convert results to JSON format
+        results_json = [{'id': book.BookID, 'title': book.Title, 'author': book.Author} for book in books]
+        return jsonify(results_json)    
+
+    
+    # Render the original search page for non-AJAX requests
     return render_template('search_book.html')
 
 @app.route('/search_results', methods=['GET'])

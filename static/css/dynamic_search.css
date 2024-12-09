@@ -1,0 +1,21 @@
+#search-box {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+}
+
+#search-results {
+    max-height: 300px;
+    overflow-y: auto;  /* Add scrolling for long results */
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.list-group-item {
+    cursor: pointer;
+}
+
+.list-group-item:hover {
+    background-color: #e9ecef;
+}

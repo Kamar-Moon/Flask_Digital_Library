@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dynamic_search.css') }}">
+{% endblock %}
+
 {% block title %}
     Edit Book
 {% endblock %}    
@@ -8,9 +12,15 @@
     <div class="container mt-5">
         <h2>Search Book</h2>
 
-<form method="GET" action="{{ url_for('search_results') }}" class="d-flex mb-4">
-    <input class="form-control me-2" type="text" name="search_query" placeholder="Search by Name or Author" required>
+<form method="POST" action="{{ url_for('search_book') }}" class="d-flex mb-4">
+    <input class="form-control me-2" type="text" name="search_query"  id= "search-box" placeholder="Search by Name or Author" required>
     <button class="btn btn-primary" type="submit">Search</button>
 </form>
+<div id="search-results" class="mt-2">
+<!-- Search results will dynamically inserted here -->
+</div>
+{% endblock %}
 
+{% block scripts %}
+    <script src="{{url_for('static', filename='js/dynamic_search.js') }}"></script>
 {% endblock %}
