@@ -40,7 +40,7 @@ class Book(db.Model):
     genres = db.relationship('Genre', secondary='bookgenres', backref=db.backref('books', lazy='dynamic'))
    
  
-@app.route("/home")
+@app.route("/")
 def home():
     flash("Welcome User!")
     return render_template('base.html')
@@ -232,6 +232,11 @@ def delete_book(book_id):
 
             return redirect(url_for('search_book'))
 
+@app.route('/view_books', methods=['GET'])
+def view_books():
+    # Query for all books in the database
+    books = db.session.query(Book).all()
+    return render_template('view_books.html', books=books)
 
 if __name__ == "__main__":
     app.run(debug=True)
